@@ -92,43 +92,53 @@
         </div>
 
         <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
-            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead>
-                    <tr>
-                        <th class="px-6 py-3">Waktu</th>
-                        <th class="px-6 py-3">Barang</th>
-                        <th class="px-6 py-3">Jenis</th>
-                        <th class="px-6 py-3">Harga Satuan</th>
-                        <th class="px-6 py-3">Total</th>
-                        <th class="px-6 py-3">Aksi</th> </tr>
-                </thead>
-                                <tbody>
-                    @forelse($transaksis as $t)
-                        <tr class="border-b dark:border-zinc-700">
-                            <td class="px-6 py-4">{{ $t->created_at->format('d/m H:i') }}</td>
-                            <td class="px-6 py-4">{{ $t->barang->nama }}</td>
-                            <td class="px-6 py-4">
-                                @if($t->jenis == 'keluar')
-                                    <span class="text-red-600 font-bold">Terjual</span>
-                                @else
-                                    <span class="text-green-600 font-bold">Restock</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">Rp {{ number_format($t->harga_satuan) }}</td>
-                            <td class="px-6 py-4 font-bold">Rp {{ number_format($t->total_harga) }}</td>
-                            
-                            <td class="px-6 py-4">
-                                <button wire:click="hapus({{ $t->id }})" 
-                                        wire:confirm="Yakin batalkan transaksi ini? Stok akan dikembalikan."
-                                        class="text-red-500 hover:text-red-700 text-xs font-bold uppercase tracking-wider border border-red-200 bg-red-50 px-2 py-1 rounded">
-                                    Batal
-                                </button>
-                            </td>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <thead class="bg-gray-50 dark:bg-zinc-700 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-3">Waktu</th>
+                            <th class="px-6 py-3">Barang</th>
+                            <th class="px-6 py-3">Jenis</th>
+                            <th class="px-6 py-3">Harga Satuan</th>
+                            <th class="px-6 py-3">Total</th>
+                            <th class="px-6 py-3">Aksi</th>
                         </tr>
-                    @empty
+                    </thead>
+                    <tbody>
+                        @forelse($transaksis as $t)
+                            <tr class="border-b dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50">
+                                <td class="px-6 py-4">{{ $t->created_at->format('d/m H:i') }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ $t->barang->nama }}</td>
+                                <td class="px-6 py-4">
+                                    @if($t->jenis == 'keluar')
+                                        <span class="text-red-600 font-bold bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full text-xs">Terjual</span>
+                                    @else
+                                        <span class="text-green-600 font-bold bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">Restock</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">Rp {{ number_format($t->harga_satuan) }}</td>
+                                <td class="px-6 py-4 font-bold">Rp {{ number_format($t->total_harga) }}</td>
+                                
+                                <td class="px-6 py-4">
+                                    <button wire:click="hapus({{ $t->id }})" 
+                                            wire:confirm="Yakin batalkan transaksi ini? Stok akan dikembalikan."
+                                            class="text-red-500 hover:text-red-700 text-xs font-bold uppercase tracking-wider border border-red-200 bg-red-50 px-2 py-1 rounded">
+                                        Batal
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada transaksi.</td>
+                            </tr>
                         @endforelse
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div> <div class="p-4 border-t border-gray-200 dark:border-zinc-700">
+                {{ $transaksis->links() }} 
+            </div>
+
         </div>
 
     </div>
