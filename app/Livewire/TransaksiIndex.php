@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Transaksi;
 use App\Models\Barang;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB; 
 
 class TransaksiIndex extends Component
 {
@@ -54,9 +55,9 @@ class TransaksiIndex extends Component
 
     public function simpan()
     {
-        // Validasi
+        // 1. Validasi dulu (biarkan di luar transaksi)
         $rules = [
-            'barang_id' => 'required', // Pastikan ID terpilih (bukan cuma teks)
+            'barang_id' => 'required',
             'jumlah' => 'required|numeric|min:1',
             'jenis' => 'required',
         ];
@@ -65,37 +66,41 @@ class TransaksiIndex extends Component
             $rules['harga_custom'] = 'required|numeric|min:1';
         }
 
-        // Custom pesan error biar user tau kalau belum klik barang
-        $messages = [
-            'barang_id.required' => 'Silakan cari dan KLIK barang dari daftar.',
-        ];
+        $this->validate($rules);
 
-        $this->validate($rules, $messages);
-
-        $barang = Barang::find($this->barang_id);
-        $harga_final = 0;
-
-        if ($this->jenis == 'keluar') {
-            if ($barang->stok < $this->jumlah) {
-                return session()->flash('error', 'Stok barang tidak cukup!');
-            }
-            $barang->decrement('stok', $this->jumlah);
-            $harga_final = $barang->harga_jual; 
+        // 2. MULAI TRANSAKSI DATABASE
+        // Semua kode di dalam kurung kurawal ini dianggap satu paket.
+        DB::transaction(function () {
             
-        } else {
-            $barang->increment('stok', $this->jumlah);
-            $harga_final = $this->harga_custom; 
-        }
+            $barang = Barang::lockForUpdate()->find($this->barang_id); // lockForUpdate mencegah bentrok kalau ada 2 kasir input barengan
+            $harga_final = 0;
 
-        Transaksi::create([
-            'barang_id' => $this->barang_id,
-            'jenis' => $this->jenis,
-            'jumlah' => $this->jumlah,
-            'harga_satuan' => $harga_final,
-            'total_harga' => $harga_final * $this->jumlah,
-        ]);
+            // --- A. LOGIKA STOK ---
+            if ($this->jenis == 'keluar') {
+                if ($barang->stok < $this->jumlah) {
+                    // Kita lempar error biar transaksi batal otomatis
+                    throw new \Exception('Stok barang tidak cukup!');
+                }
+                $barang->decrement('stok', $this->jumlah);
+                $harga_final = $barang->harga_jual; 
+                
+            } else {
+                $barang->increment('stok', $this->jumlah);
+                $harga_final = $this->harga_custom; 
+            }
 
-        // Reset form termasuk pencarian
+            // --- B. BUAT TRANSAKSI ---
+            Transaksi::create([
+                'barang_id' => $this->barang_id,
+                'jenis' => $this->jenis,
+                'jumlah' => $this->jumlah,
+                'harga_satuan' => $harga_final,
+                'total_harga' => $harga_final * $this->jumlah,
+            ]);
+
+        }); // <--- SELESAI TRANSAKSI
+
+        // 3. Reset form kalau sukses
         $this->reset(['barang_id', 'jumlah', 'harga_custom', 'cari_produk']);
         session()->flash('sukses', 'Transaksi berhasil disimpan!');
     }
